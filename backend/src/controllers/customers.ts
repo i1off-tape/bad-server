@@ -3,7 +3,7 @@ import { FilterQuery } from 'mongoose'
 import NotFoundError from '../errors/not-found-error'
 import Order from '../models/order'
 import User, { IUser } from '../models/user'
-
+import escapeRegExp from '../utils/escapeRegExp'
 // TODO: Добавить guard admin
 // eslint-disable-next-line max-len
 // Get GET /customers?page=2&limit=5&sort=totalAmount&order=desc&registrationDateFrom=2023-01-01&registrationDateTo=2023-12-31&lastOrderDateFrom=2023-01-01&lastOrderDateTo=2023-12-31&totalAmountFrom=100&totalAmountTo=1000&orderCountFrom=1&orderCountTo=10
@@ -24,6 +24,14 @@ function getCustomerSortField(value: unknown) {
 
 function getSortOrder(value: unknown) {
     return value === 'asc' ? 1 : -1
+}
+
+function getSafeSearch(value: unknown) {
+    if (typeof value !== 'string') {
+        return ''
+    }
+
+    return value.trim().slice(0, 100)
 }
 
 export const getCustomers = async (
@@ -111,7 +119,8 @@ export const getCustomers = async (
         }
 
         if (search) {
-            const searchRegex = new RegExp(search as string, 'i')
+            const safeSearch = getSafeSearch(search)
+            const searchRegex = new RegExp(escapeRegExp(safeSearch), 'i')
             const orders = await Order.find(
                 {
                     $or: [{ deliveryAddress: searchRegex }],

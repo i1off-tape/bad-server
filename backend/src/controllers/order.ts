@@ -6,6 +6,7 @@ import Order, { IOrder, StatusType } from '../models/order'
 import Product, { IProduct } from '../models/product'
 import User from '../models/user'
 import sanitizeOrderComment from '../utils/sanitizeOrderComment'
+import escapeRegExp from '../utils/escapeRegExp'
 
 // eslint-disable-next-line max-len
 // GET /orders?page=2&limit=5&sort=totalAmount&order=desc&orderDateFrom=2024-07-01&orderDateTo=2024-08-01&status=delivering&totalAmountFrom=100&totalAmountTo=1000&search=%2B1
@@ -25,6 +26,14 @@ function getSortField(value: unknown) {
 
 function getSortOrder(value: unknown) {
     return value === 'asc' ? 1 : -1
+}
+
+function getSafeSearch(value: unknown) {
+    if (typeof value !== 'string') {
+        return ''
+    }
+
+    return value.trim().slice(0, 100)
 }
 
 function getOrderStatus(value: unknown) {
@@ -111,7 +120,8 @@ export const getOrders = async (
         ]
 
         if (search) {
-            const searchRegex = new RegExp(search as string, 'i')
+            const safeSearch = getSafeSearch(search)
+            const searchRegex = new RegExp(escapeRegExp(safeSearch), 'i')
             const searchNumber = Number(search)
 
             const searchConditions: any[] = [{ 'products.title': searchRegex }]
@@ -208,7 +218,8 @@ export const getOrdersCurrentUser = async (
 
         if (search) {
             // если не экранировать то получаем Invalid regular expression: /+1/i: Nothing to repeat
-            const searchRegex = new RegExp(search as string, 'i')
+            const safeSearch = getSafeSearch(search)
+            const searchRegex = new RegExp(escapeRegExp(safeSearch), 'i')
             const searchNumber = Number(search)
             const products = await Product.find({ title: searchRegex })
             const productIds = products.map((product) => product._id)
