@@ -19,14 +19,19 @@ const app = express()
 const allowedOrigins = (process.env.ORIGIN_ALLOW || 'http://localhost:5173')
     .split(',')
     .map((origin) => origin.trim())
+    .filter(Boolean)
+
+if (!allowedOrigins.includes('http://localhost:5173')) {
+    allowedOrigins.push('http://localhost:5173')
+}
 
 const corsOptions = {
     origin(
         origin: string | undefined,
-        callback: (err: Error | null, allow?: boolean) => void
+        callback: (err: Error | null, allow?: boolean | string) => void
     ) {
         if (!origin || allowedOrigins.includes(origin)) {
-            return callback(null, true)
+            return callback(null, origin || 'http://localhost:5173')
         }
 
         return callback(new Error('CORS origin denied'))
@@ -38,7 +43,7 @@ app.use(helmet())
 app.use(
     rateLimit({
         windowMs: 15 * 60 * 1000,
-        max: 300,
+        max: 40,
         standardHeaders: true,
         legacyHeaders: false,
     })

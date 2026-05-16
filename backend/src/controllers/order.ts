@@ -71,6 +71,8 @@ export const getOrders = async (
         const safeStatus = getOrderStatus(status)
         if (safeStatus) {
             filters.status = safeStatus
+        } else if (status !== undefined) {
+            throw new BadRequestError('Некорректный статус заказа')
         }
 
         if (totalAmountFrom) {
@@ -145,10 +147,6 @@ export const getOrders = async (
 
         const sort = {
             [getSortField(sortField)]: getSortOrder(sortOrder),
-        }
-
-        if (sortField && sortOrder) {
-            sort[sortField as string] = sortOrder === 'desc' ? -1 : 1
         }
 
         aggregatePipeline.push(
@@ -243,7 +241,7 @@ export const getOrdersCurrentUser = async (
         }
 
         const totalOrders = orders.length
-        const totalPages = Math.ceil(totalOrders / Number(limit))
+        const totalPages = Math.ceil(totalOrders / limit)
 
         orders = orders.slice(skip, skip + limit)
 

@@ -144,10 +144,6 @@ export const getCustomers = async (
             [getCustomerSortField(sortField)]: getSortOrder(sortOrder),
         }
 
-        if (sortField && sortOrder) {
-            sort[sortField as string] = sortOrder === 'desc' ? -1 : 1
-        }
-
         const options = {
             sort,
             skip,
