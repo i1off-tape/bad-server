@@ -67,8 +67,11 @@ class Api {
 
     private refreshToken = () => {
         return this.request<UserResponseToken>('/auth/token', {
-            method: 'GET',
+            method: 'POST',
             credentials: 'include',
+            headers: {
+                'X-CSRF-Token': getCookie('csrfToken') || '',
+            },
         })
     }
 
@@ -293,8 +296,11 @@ export class WebLarekAPI extends Api implements IWebLarekAPI {
 
     logoutUser = () => {
         return this.request<ServerResponse<unknown>>('/auth/logout', {
-            method: 'GET',
+            method: 'POST',
             credentials: 'include',
+            headers: {
+                'X-CSRF-Token': getCookie('csrfToken') || '',
+            },
         })
     }
 
