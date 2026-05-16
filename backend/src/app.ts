@@ -23,8 +23,8 @@ app.use(cors())
 
 app.use(serveStatic(path.join(__dirname, 'public')))
 
-app.use(urlencoded({ extended: true }))
-app.use(json())
+app.use(urlencoded({ extended: true, limit: '100kb' }))
+app.use(json({ limit: '100kb' }))
 app.use(
     mongoSanitize({
         replaceWith: '_',
