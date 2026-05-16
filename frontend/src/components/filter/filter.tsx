@@ -8,6 +8,7 @@ import useFormWithValidation from '../form/hooks/useFormWithValidation'
 import Select from '../select'
 import styles from './filter.module.scss'
 import { FieldOption } from './helpers/types'
+import { FilterValues } from '../../utils/types'
 
 interface Field {
     name?: string
@@ -20,8 +21,8 @@ interface FilterSelectedState {
 }
 interface FilterComponentProps {
     fields: Field[]
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onFilter: (filters: Record<string, any>) => void
+     
+    onFilter: (filters: FilterValues) => void
     onClear: () => void
     defaultValue?: FiltersOrder | FiltersCustomers
 }
@@ -111,7 +112,7 @@ const Filter = ({
                 (item) => item.value === (defaultValue as FiltersOrder)?.status
             )
             if (status) {
-                setSelects({ ...selects, status })
+                setSelects((currentSelect) => ({ ...currentSelect, status }))
             }
         }
     }, [defaultValue])

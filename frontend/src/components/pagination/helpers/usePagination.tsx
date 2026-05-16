@@ -1,8 +1,16 @@
 import { AsyncThunk } from '@reduxjs/toolkit'
 import { useDispatch, useSelector } from '@store/hooks'
 import { RootState } from '@store/store'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
+
+type PaginationParams = Record<string, string | number | undefined>
+
+type PaginationResponse = {
+    pagination: {
+        totalPages: number
+    }
+}
 
 interface PaginationResult<_, U> {
     data: U[]
@@ -15,8 +23,8 @@ interface PaginationResult<_, U> {
     setLimit: (limit: number) => void
 }
 
-const usePagination = <T, U>(
-    asyncAction: AsyncThunk<T, Record<string, unknown>, any>,
+const usePagination = <T extends PaginationResponse, U>(
+    asyncAction: AsyncThunk<T, Record<string, unknown>, { state: RootState }>,
     selector: (state: RootState) => U[],
     defaultLimit: number
 ): PaginationResult<T, U> => {
@@ -32,10 +40,39 @@ const usePagination = <T, U>(
 
     const limit = Number(searchParams.get('limit')) || defaultLimit
 
-    const fetchData = async (params: Record<string, any>) => {
-        const response: any = await dispatch(asyncAction(params))
-        setTotalPages(response.payload.pagination.totalPages)
-    }
+    const updateURL = useCallback(
+        (newParams: PaginationParams) => {
+            const updatedParams = new URLSearchParams(searchParams)
+            Object.entries(newParams).forEach(([key, value]) => {
+                if (value !== undefined) {
+                    updatedParams.set(key, value.toString())
+                } else {
+                    updatedParams.delete(key)
+                }
+            })
+            setSearchParams(updatedParams)
+        },
+        [searchParams, setSearchParams]
+    )
+
+    const setPage = useCallback(
+        (page: number) => {
+            const newPage = Math.max(1, Math.min(page, totalPages))
+            updateURL({ page: newPage, limit })
+        },
+        [limit, totalPages, updateURL]
+    )
+
+    const fetchData = useCallback(
+        async (params: Record<string, unknown>) => {
+            const response = await dispatch(asyncAction(params))
+
+            if (asyncAction.fulfilled.match(response)) {
+                setTotalPages(response.payload.pagination.totalPages)
+            }
+        },
+        [asyncAction, dispatch]
+    )
 
     useEffect(() => {
         const params = Object.fromEntries(searchParams.entries())
@@ -44,41 +81,26 @@ const usePagination = <T, U>(
                 setPage(1)
             }
         })
-    }, [currentPage, limit, searchParams])
+    }, [currentPage, limit, searchParams, fetchData, data.length, setPage])
 
-    const updateURL = (newParams: Record<string, any>) => {
-        3
-        const updatedParams = new URLSearchParams(searchParams)
-        Object.entries(newParams).forEach(([key, value]) => {
-            if (value !== undefined) {
-                updatedParams.set(key, value.toString())
-            } else {
-                updatedParams.delete(key)
-            }
-        })
-        setSearchParams(updatedParams)
-    }
-
-    const nextPage = () => {
+    const nextPage = useCallback(() => {
         if (currentPage < totalPages) {
             updateURL({ page: currentPage + 1, limit })
         }
-    }
+    }, [currentPage, limit, totalPages, updateURL])
 
-    const prevPage = () => {
+    const prevPage = useCallback(() => {
         if (currentPage > 1) {
             updateURL({ page: currentPage - 1, limit })
         }
-    }
+    }, [currentPage, limit, updateURL])
 
-    const setPage = (page: number) => {
-        const newPage = Math.max(1, Math.min(page, totalPages))
-        updateURL({ page: newPage, limit })
-    }
-
-    const setLimit = (newLimit: number) => {
-        updateURL({ page: 1, limit: newLimit }) // При изменении лимита возвращаемся на первую страницу
-    }
+    const setLimit = useCallback(
+        (newLimit: number) => {
+            updateURL({ page: 1, limit: newLimit }) // При изменении лимита возвращаемся на первую страницу
+        },
+        [updateURL]
+    )
 
     return {
         data,

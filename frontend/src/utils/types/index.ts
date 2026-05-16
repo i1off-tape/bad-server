@@ -141,3 +141,13 @@ export interface IOrderResult {
     createdAt: string
     updatedAt: string
 }
+
+export type FilterValue =
+    | string
+    | number
+    | boolean
+    | { value: string; title?: string }
+    | null
+    | undefined
+
+export type FilterValues = Record<string, FilterValue>
