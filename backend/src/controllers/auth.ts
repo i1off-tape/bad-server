@@ -11,6 +11,13 @@ import UnauthorizedError from '../errors/unauthorized-error'
 import User from '../models/user'
 import { issueCsrfToken } from '../middlewares/csrf'
 
+// GET /auth/csrf-token
+const getCsrfToken = (_req: Request, res: Response) => {
+    const csrfToken = issueCsrfToken(_req, res)
+
+    return res.json({ csrfToken })
+}
+
 // POST /auth/login
 const login = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -211,6 +218,7 @@ const updateCurrentUser = async (
 }
 
 export {
+    getCsrfToken,
     getCurrentUser,
     getCurrentUserRoles,
     login,
