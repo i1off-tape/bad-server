@@ -3,6 +3,8 @@ import cookieParser from 'cookie-parser'
 import cors from 'cors'
 import mongoSanitize from 'express-mongo-sanitize'
 import hpp from 'hpp'
+import helmet from 'helmet'
+import rateLimit from 'express-rate-limit'
 import 'dotenv/config'
 import express, { json, urlencoded } from 'express'
 import mongoose, { mongo } from 'mongoose'
@@ -15,9 +17,31 @@ import routes from './routes'
 const { PORT = 3000 } = process.env
 const app = express()
 
+const allowedOrigins = (process.env.ORIGIN_ALLOW || 'http://localhost:5173')
+    .split(',')
+    .map((origin) => origin.trim())
+
+const corsOptions = {
+    origin(origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
+        if(!origin || allowedOrigins.includes(origin) {
+            return callback(null, true)
+        }
+        return callback(new Error('Not allowed by CORS'))
+        },
+        credentials: true,
+    }
+
+app.use(helmet())
+app.use(rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 300,
+    standardHeaders: true,
+    legacyHeaders: false,
+}))
+
 app.use(cookieParser())
 
-app.use(cors())
+app.use(cors(corsOptions))
 // app.use(cors({ origin: ORIGIN_ALLOW, credentials: true }));
 // app.use(express.static(path.join(__dirname, 'public')));
 
@@ -31,7 +55,7 @@ app.use(
     })
 )
 app.use(hpp())
-app.options('*', cors())
+app.options('*', cors(corsOptions))
 app.use(routes)
 app.use(errors())
 app.use(errorHandler)
