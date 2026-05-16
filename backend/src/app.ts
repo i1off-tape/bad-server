@@ -1,9 +1,11 @@
 import { errors } from 'celebrate'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
+import mongoSanitize from 'express-mongo-sanitize'
+import hpp from 'hpp'
 import 'dotenv/config'
 import express, { json, urlencoded } from 'express'
-import mongoose from 'mongoose'
+import mongoose, { mongo } from 'mongoose'
 import path from 'path'
 import { DB_ADDRESS } from './config'
 import errorHandler from './middlewares/error-handler'
@@ -23,7 +25,12 @@ app.use(serveStatic(path.join(__dirname, 'public')))
 
 app.use(urlencoded({ extended: true }))
 app.use(json())
-
+app.use(
+    mongoSanitize({
+        replaceWith: '_',
+    })
+)
+app.use(hpp())
 app.options('*', cors())
 app.use(routes)
 app.use(errors())
