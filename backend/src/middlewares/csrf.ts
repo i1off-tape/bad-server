@@ -2,7 +2,7 @@ import crypto from 'crypto'
 import { NextFunction, Request, Response } from 'express'
 import ForbiddenError from '../errors/forbidden-error'
 
-export const CSRF_COOKIE_NAME = 'csrfToken'
+export const CSRF_COOKIE_NAME = '_csrf'
 export const CSRF_HEADER_NAME = 'x-csrf-token'
 
 export function issueCsrfToken(_req: Request, res: Response) {
