@@ -1,30 +1,71 @@
 import { errors } from 'celebrate'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
+import mongoSanitize from 'express-mongo-sanitize'
+import hpp from 'hpp'
+import helmet from 'helmet'
+import rateLimit from 'express-rate-limit'
 import 'dotenv/config'
 import express, { json, urlencoded } from 'express'
 import mongoose from 'mongoose'
 import path from 'path'
 import { DB_ADDRESS } from './config'
 import errorHandler from './middlewares/error-handler'
-import serveStatic from './middlewares/serverStatic'
 import routes from './routes'
 
 const { PORT = 3000 } = process.env
 const app = express()
 
+const allowedOrigins = (process.env.ORIGIN_ALLOW || 'http://localhost:5173')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+
+if (!allowedOrigins.includes('http://localhost:5173')) {
+    allowedOrigins.push('http://localhost:5173')
+}
+
+const corsOptions = {
+    origin(
+        origin: string | undefined,
+        callback: (err: Error | null, allow?: boolean | string) => void
+    ) {
+        if (!origin || allowedOrigins.includes(origin)) {
+            return callback(null, origin || 'http://localhost:5173')
+        }
+
+        return callback(new Error('CORS origin denied'))
+    },
+    credentials: true,
+}
+
+app.use(helmet())
+app.use(
+    rateLimit({
+        windowMs: 15 * 60 * 1000,
+        max: 40,
+        standardHeaders: true,
+        legacyHeaders: false,
+    })
+)
+
 app.use(cookieParser())
 
-app.use(cors())
+app.use(cors(corsOptions))
 // app.use(cors({ origin: ORIGIN_ALLOW, credentials: true }));
 // app.use(express.static(path.join(__dirname, 'public')));
 
-app.use(serveStatic(path.join(__dirname, 'public')))
+app.use(express.static(path.join(__dirname, 'public')))
 
-app.use(urlencoded({ extended: true }))
-app.use(json())
-
-app.options('*', cors())
+app.use(urlencoded({ extended: true, limit: '100kb' }))
+app.use(json({ limit: '100kb' }))
+app.use(
+    mongoSanitize({
+        replaceWith: '_',
+    })
+)
+app.use(hpp())
+app.options('*', cors(corsOptions))
 app.use(routes)
 app.use(errors())
 app.use(errorHandler)

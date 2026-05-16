@@ -9,6 +9,14 @@ import ConflictError from '../errors/conflict-error'
 import NotFoundError from '../errors/not-found-error'
 import UnauthorizedError from '../errors/unauthorized-error'
 import User from '../models/user'
+import { issueCsrfToken } from '../middlewares/csrf'
+
+// GET /auth/csrf-token
+const getCsrfToken = (_req: Request, res: Response) => {
+    const csrfToken = issueCsrfToken(_req, res)
+
+    return res.json({ csrfToken })
+}
 
 // POST /auth/login
 const login = async (req: Request, res: Response, next: NextFunction) => {
@@ -22,6 +30,7 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
             refreshToken,
             REFRESH_TOKEN.cookie.options
         )
+        issueCsrfToken(req, res)
         return res.json({
             success: true,
             user,
@@ -46,6 +55,7 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
             refreshToken,
             REFRESH_TOKEN.cookie.options
         )
+        issueCsrfToken(req, res)
         return res.status(constants.HTTP_STATUS_CREATED).json({
             success: true,
             user: newUser,
@@ -154,6 +164,7 @@ const refreshAccessToken = async (
             refreshToken,
             REFRESH_TOKEN.cookie.options
         )
+        issueCsrfToken(req, res)
         return res.json({
             success: true,
             user: userWithRefreshTkn,
@@ -191,10 +202,16 @@ const updateCurrentUser = async (
     next: NextFunction
 ) => {
     const userId = res.locals.user._id
+    const { name, phone } = req.body
     try {
-        const updatedUser = await User.findByIdAndUpdate(userId, req.body, {
-            new: true,
-        }).orFail(
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            { $set: { name, phone } },
+            {
+                new: true,
+                runValidators: true,
+            }
+        ).orFail(
             () =>
                 new NotFoundError(
                     'Пользователь по заданному id отсутствует в базе'
@@ -207,6 +224,7 @@ const updateCurrentUser = async (
 }
 
 export {
+    getCsrfToken,
     getCurrentUser,
     getCurrentUserRoles,
     login,

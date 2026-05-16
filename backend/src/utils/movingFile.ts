@@ -1,21 +1,15 @@
-import { existsSync, mkdirSync, rename } from 'fs'
-import { basename, join } from 'path'
+import { rename } from 'fs/promises'
+import { basename } from 'path'
+import { resolveInside } from './safeUploadPath'
 
-function movingFile(imagePath: string, from: string, to: string) {
+export default async function movingFile(
+    imagePath: string,
+    from: string,
+    to: string
+) {
     const fileName = basename(imagePath)
-    const imagePathTemp = join(from, fileName)
-    const imagePathPermanent = join(to, fileName)
+    const imagePathTemp = resolveInside(from, fileName)
+    const imagePathPermanent = resolveInside(to, fileName)
 
-    mkdirSync(to, { recursive: true })
-    if (!existsSync(imagePathTemp)) {
-        throw new Error('Ошибка при сохранении файла')
-    }
-
-    rename(imagePathTemp, imagePathPermanent, (err) => {
-        if (err) {
-            throw new Error('Ошибка при сохранении файла')
-        }
-    })
+    await rename(imagePathTemp, imagePathPermanent)
 }
-
-export default movingFile

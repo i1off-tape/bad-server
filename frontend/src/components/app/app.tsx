@@ -21,11 +21,8 @@ import Basket from '@components/basket'
 import CardDetails from '@components/card-details'
 import Header from '@components/header'
 import Modal from '@components/modal'
-import Order, {
-    OrderAddress,
-    OrderContacts,
-    OrderSuccess,
-} from '@components/order'
+import Order from '@components/order'
+import { OrderAddress, OrderContacts, OrderSuccess } from '@components/order/routes'
 import ProfileOrders from '@components/profile/profile-orders'
 import ProtectedRoute from '@components/protected-route/protected-route'
 import { AppRoute } from '@constants'

@@ -1,7 +1,15 @@
 import { Request, Express } from 'express'
 import multer, { FileFilterCallback } from 'multer'
 import { mkdirSync } from 'fs'
-import { join } from 'path'
+import { join, extname } from 'path'
+import crypto from 'crypto'
+
+const allowedExtensions = new Map([
+    ['image/png', 'png'],
+    ['image/jpg', 'jpg'],
+    ['image/jpeg', 'jpeg'],
+    ['image/gif', 'gif'],
+])
 
 type DestinationCallback = (error: Error | null, destination: string) => void
 type FileNameCallback = (error: Error | null, filename: string) => void
@@ -29,28 +37,32 @@ const storage = multer.diskStorage({
         file: Express.Multer.File,
         cb: FileNameCallback
     ) => {
-        cb(null, file.originalname)
+        const safeExtension =
+            allowedExtensions.get(file.mimetype) || extname(file.originalname)
+
+        cb(null, `${crypto.randomUUID()}${safeExtension}`)
     },
 })
 
-const types = [
-    'image/png',
-    'image/jpg',
-    'image/jpeg',
-    'image/gif',
-    'image/svg+xml',
-]
+const types = ['image/png', 'image/jpg', 'image/jpeg', 'image/gif']
 
 const fileFilter = (
     _req: Request,
     file: Express.Multer.File,
     cb: FileFilterCallback
 ) => {
-    if (!types.includes(file.mimetype)) {
+    if (!allowedExtensions.has(file.mimetype)) {
         return cb(null, false)
     }
 
     return cb(null, true)
 }
 
-export default multer({ storage, fileFilter })
+export default multer({
+    storage,
+    fileFilter,
+    limits: {
+        fileSize: 5 * 1024 * 1024, // 5MB
+        files: 1,
+    },
+})
