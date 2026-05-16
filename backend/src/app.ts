@@ -22,22 +22,28 @@ const allowedOrigins = (process.env.ORIGIN_ALLOW || 'http://localhost:5173')
     .map((origin) => origin.trim())
 
 const corsOptions = {
-    origin(origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
-        if(!origin || allowedOrigins.includes(origin) {
+    origin(
+        origin: string | undefined,
+        callback: (err: Error | null, allow?: boolean) => void
+    ) {
+        if (!origin || allowedOrigins.includes(origin)) {
             return callback(null, true)
         }
-        return callback(new Error('Not allowed by CORS'))
-        },
-        credentials: true,
-    }
+
+        return callback(new Error('CORS origin denied'))
+    },
+    credentials: true,
+}
 
 app.use(helmet())
-app.use(rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 300,
-    standardHeaders: true,
-    legacyHeaders: false,
-}))
+app.use(
+    rateLimit({
+        windowMs: 15 * 60 * 1000,
+        max: 300,
+        standardHeaders: true,
+        legacyHeaders: false,
+    })
+)
 
 app.use(cookieParser())
 
